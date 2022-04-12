@@ -25,11 +25,8 @@ private:
     std::list<Key> *table;
 
     // Constants
-    const size_type DEFAULT_BUCKET_SIZE = 30;
+    const size_type DEFAULT_BUCKET_SIZE = 11;
     const float DEFAULT_MAX_LOAD_FACTOR = 1.0f;
-
-    // Instantiation of Object
-    std::hash<Key> hash_function;
 
     bool is_prime(size_type num);
 
