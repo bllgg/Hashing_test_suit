@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.13)
 project(Hashing_Assignment)
 
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 17)
 
 add_executable(Hashing_Assignment hashtable_open_addressing.h hashtable_open_addressing_tests.cpp hashtable_separate_chaining.h hashtable_separate_chaining_tests.cpp open_addressing_compile_test.cpp open_addressing_memory_errors.cpp separate_chaining_compile_test.cpp separate_chaining_memory_errors.cpp)
