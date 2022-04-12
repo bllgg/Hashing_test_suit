@@ -31,6 +31,8 @@ private:
     // Instantiation of Object
     std::hash<Key> hash_function;
 
+    bool is_prime(size_type num);
+
 public:
     HashTable();
 
@@ -224,8 +226,32 @@ bool HashTable<Key, Hash>::insert(const value_type &value) {
     }
 
     table[index].push_back(value);
+
+    if (this->load_factor() > maximum_load_factor) {
+        // Find the next prime
+        size_type bucket_number = number_of_buckets * 2;
+        while (!is_prime(bucket_number)) {
+            bucket_number++;
+        }
+
+        rehash(bucket_number);
+    }
+
     return true;
 
+}
+
+//-------------------------------------------------------
+// Name: is_prime()
+// PreCondition: num should be positive
+// PostCondition: returns the number is prime or not.
+//---------------------------------------------------------
+template<class Key, class Hash>
+bool HashTable<Key, Hash>::is_prime(size_type num) {
+    for (size_type i = 2; i * i <= num; i++)
+        if (num % i == 0) // Factor found
+            return false;
+    return true;
 }
 
 //-------------------------------------------------------
@@ -236,20 +262,22 @@ bool HashTable<Key, Hash>::insert(const value_type &value) {
 //---------------------------------------------------------
 template<class Key, class Hash>
 size_t HashTable<Key, Hash>::remove(const key_type &key) {
-//    int index = hashFunction(key);
-//
-//    // find the key in (index)th list
-//    std::list<int>::iterator i;
-//    for (i = table[index].begin(); i != table[index].end(); i++) {
-//        if (*i == key) {
-//            break;
-//        }
-//    }
-//
-//    // if key is found in hash table, remove it
-//    if (i != table[index].end()) {
-//        table[index].erase(i);
-//    }
+    size_type hash_value = Hash{}(key);
+    size_type index = hash_value % number_of_buckets;
+
+    // find the key in (index)th list
+    typename std::list<Key>::iterator i;
+    for (i = table[index].begin(); i != table[index].end(); i++) {
+        if (*i == key) {
+            break;
+        }
+    }
+
+    // if key is found in hash table, remove it
+    if (i != table[index].end()) {
+        table[index].erase(i);
+        return 1;
+    }
     return 0;
 
 }
@@ -359,6 +387,30 @@ void HashTable<Key, Hash>::max_load_factor(float mlf) {
 //---------------------------------------------------------
 template<class Key, class Hash>
 void HashTable<Key, Hash>::rehash(HashTable::size_type count) {
+
+    // create a new hash table and copy values
+    HashTable<std::string> hashTable(count);
+
+    for (size_type index = 0; index < number_of_buckets; ++index) {
+        typename std::list<Key>::iterator i;
+        for (i = table[index].begin(); i != table[index].end(); i++) {
+            hashTable.insert(*i);
+        }
+    }
+
+    // Clear table;
+    make_empty();
+    delete[] table;
+
+    this->number_of_buckets = hashTable.bucket_count();
+
+    this->table = new std::list<Key>[count];
+    for (size_type index = 0; index < number_of_buckets; ++index) {
+        typename std::list<Key>::iterator i;
+        for (i = hashTable.table[index].begin(); i != hashTable.table[index].end(); i++) {
+            this->insert(*i);
+        }
+    }
 
 }
 
