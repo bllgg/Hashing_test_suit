@@ -255,12 +255,8 @@ bool HashTable<Key, Hash>::insert(const value_type &value) {
         // If the slot has no value we can insert  the value
         if (!slot.first) {
             slot.first = true;
-//            std::cout << "slot.first "<< index ;
             slot.second = value;
-//            std::cout << "after table\n";
             count++;
-
-//            std::cout << "Load factor " << load_factor() << std::endl;
 
             if (load_factor() > maximum_load_factor) {
                 size_type cell_number = number_of_cells * 4;
@@ -268,6 +264,7 @@ bool HashTable<Key, Hash>::insert(const value_type &value) {
                     cell_number++;
                 }
 
+                count = 0;
                 ret = rehash(cell_number);
             }
             return ret;
@@ -370,7 +367,6 @@ bool HashTable<Key, Hash>::contains(const key_type &key) {
 template<class Key, class Hash>
 bool HashTable<Key, Hash>::rehash(size_type count) {
 
-    std::cout << "Size " << size() << " count " << count << std::endl;
     //If the count is same, no need to rehash
     if (count == number_of_cells) {
         return false;
