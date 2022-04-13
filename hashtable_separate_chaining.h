@@ -383,15 +383,25 @@ void HashTable<Key, Hash>::max_load_factor(float mlf) {
 //---------------------------------------------------------
 template<class Key, class Hash>
 void HashTable<Key, Hash>::rehash(HashTable::size_type count) {
+    std::cout << "rehashing\n";
 
-    if (count == number_of_buckets) {
+    //If the count is same, no need to rehash
+    if (count == this->number_of_buckets) {
         return;
     }
+
+    // Check for the load factor
+    if (((float) size() / count) > maximum_load_factor) {
+        std::cout << "Invalid count\n";
+        return;
+    }
+
     // create a new hash table and copy values
     HashTable<Key> *newHashTable = new HashTable<Key>(count);
+    newHashTable->max_load_factor(maximum_load_factor);
     // std::list<Key> *table2 = new std::list<Key>[count];
 
-    for (size_type index = 0; index < number_of_buckets; ++index) {
+    for (size_type index = 0; index < this->number_of_buckets; ++index) {
         typename std::list<Key>::iterator i;
         for (i = table[index].begin(); i != table[index].end(); i++) {
             newHashTable->insert(*i);
@@ -399,18 +409,20 @@ void HashTable<Key, Hash>::rehash(HashTable::size_type count) {
     }
 
     // Clear table;
-    // make_empty();
     delete[] table;
 
-    this->number_of_buckets = hashTable.bucket_count();
+    this->number_of_buckets = newHashTable->bucket_count();
+    table = new std::list<Key>[this->number_of_buckets];
 
     this->table = new std::list<Key>[count];
-    for (size_type index = 0; index < number_of_buckets; ++index) {
+    for (size_type index = 0; index < this->number_of_buckets; ++index) {
         typename std::list<Key>::iterator i;
-        for (i = hashTable.table[index].begin(); i != hashTable.table[index].end(); i++) {
+        for (i = newHashTable->table[index].begin(); i != newHashTable->table[index].end(); i++) {
             this->insert(*i);
         }
     }
+
+    delete newHashTable;
 
 }
 
@@ -430,13 +442,18 @@ void HashTable<Key, Hash>::print_table(std::ostream &os) const {
     }
     for (size_type i = 0; i < number_of_buckets; i++) {
         if (table[i].size() == 0) continue;
-        os << i;
+        os << i << ": [";
+        bool first = true;
         for (auto x : table[i]) {
-            os << " --> [" << x << "]";
+            if (first) {
+                os << x;
+                first = false;
+            } else {
+                os << ", " << x;
+            }
         }
-        os << std::endl;
+        os << "]" << std::endl;
     }
 }
-
 
 #endif  // HASHTABLE_SEPARATE_CHAINING_H
