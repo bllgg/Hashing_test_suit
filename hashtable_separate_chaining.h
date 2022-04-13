@@ -441,7 +441,9 @@ void HashTable<Key, Hash>::print_table(std::ostream &os) const {
         return;
     }
     for (size_type i = 0; i < number_of_buckets; i++) {
-        if (table[i].size() == 0) continue;
+        if (table[i].size() == 0) {
+            continue;
+        }
         os << i << ": [";
         bool first = true;
         for (auto x : table[i]) {
