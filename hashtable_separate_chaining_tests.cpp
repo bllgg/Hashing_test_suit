@@ -4,7 +4,94 @@
 
 using std::cout, std::endl;
 
+void test_integer_1();
+
+void test_string();
+
 int main() {
+    test_integer_1();
+    test_string();
+    return 0;
+}
+
+void test_integer_1() {
+    const int INITIAL_SIZE = 0;
+    const int INITIAL_TABLE_SIZE = 11;
+    const int NUMBER_OF_INPUTS = 3;
+    const int NUMBER_OF_INPUTS_AFTER_REMOVE = 2;
+    const int POSITION_OF_THREE = 3;
+    const int VALID_REHASH_VALUE = 50;
+
+
+    std::cout << "make an empty hash table with 11 buckets for ints" << std::endl;
+    HashTable<int> table(INITIAL_TABLE_SIZE);
+
+    if (table.size() == INITIAL_SIZE) {
+        std::cout << "[PASSED] initial size test " << std::endl;
+    } else {
+        std::cout << "initial size test failed " << std::endl;
+    }
+
+    if (table.bucket_count() == INITIAL_TABLE_SIZE) {
+        std::cout << "[PASSED] initial table size test" << std::endl;
+    } else {
+        std::cout << "initial table size test failed" << std::endl;
+    }
+
+    table.insert(5);
+    table.insert(3);
+    table.insert(6);
+
+    if (table.size() == NUMBER_OF_INPUTS) {
+        std::cout << "[PASSED] insert test " << std::endl;
+    } else {
+        std::cout << "insert test failed" << std::endl;
+    }
+
+    if (table.contains(6)) {
+        std::cout << "[PASSED] contains test " << std::endl;
+    } else {
+        std::cout << "contains test failed" << std::endl;
+    }
+
+    if (table.load_factor() == (float) POSITION_OF_THREE / (float) INITIAL_TABLE_SIZE) {
+        std::cout << "[PASSED] load factor test " << std::endl;
+    } else {
+        std::cout << "load factor test failed" << std::endl;
+    }
+
+    if (!table.contains(8)) {
+        std::cout << "[PASSED] contains non exist test " << std::endl;
+    } else {
+        std::cout << "contains non exist test failed" << std::endl;
+    }
+
+    table.remove(8);
+    if (table.size() == NUMBER_OF_INPUTS) {
+        std::cout << "[PASSED] remove non exist test " << std::endl;
+    } else {
+        std::cout << "remove non exist test failed" << std::endl;
+    }
+
+    table.rehash(VALID_REHASH_VALUE);
+
+    table.remove(6);
+    if (table.size() == NUMBER_OF_INPUTS_AFTER_REMOVE) {
+        std::cout << "[PASSED] remove test" << std::endl;
+    } else {
+        std::cout << "remove test failed " << table.size() << std::endl;
+    }
+
+    table.make_empty();
+    if (table.size() == INITIAL_SIZE) {
+        std::cout << "[PASSED] make empty test " << std::endl;
+    } else {
+        std::cout << "make empty test failed" << std::endl;
+    }
+
+}
+
+void test_string() {
     // Example test case in lab document
     std::cout << "make an empty hash table with 11 buckets for strings" << std::endl;
     HashTable<std::string> table(11);
@@ -97,6 +184,4 @@ int main() {
         table.print_table(ss);
         std::cout << ss.str() << std::endl;
     }
-
-    return 0;
 }
