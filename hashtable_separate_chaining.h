@@ -96,7 +96,6 @@ HashTable<Key, Hash>::HashTable() {
 template<class Key, class Hash>
 HashTable<Key, Hash>::HashTable(const HashTable &other) {
     // Clear the content
-    make_empty();
     delete[] table;
 
     number_of_buckets = other.number_of_buckets;
@@ -119,7 +118,6 @@ HashTable<Key, Hash>::HashTable(const HashTable &other) {
 template<class Key, class Hash>
 HashTable<Key, Hash> &HashTable<Key, Hash>::operator=(const HashTable &other) { // clear , new, copy
     // Clear the content
-    make_empty();
     delete[] table;
 
     number_of_buckets = other.number_of_buckets;
@@ -156,7 +154,6 @@ HashTable<Key, Hash>::HashTable(size_type buckets) {
 //---------------------------------------------------------
 template<class Key, class Hash>
 HashTable<Key, Hash>::~HashTable() {
-    make_empty();
     delete[] table;
 }
 
@@ -323,7 +320,9 @@ size_t HashTable<Key, Hash>::bucket_count() const {
 //---------------------------------------------------------
 template<class Key, class Hash>
 size_t HashTable<Key, Hash>::bucket_size(size_t n) const {
+    if (n < 0 || n >= number_of_buckets) throw std::out_of_range("Value is out of range");
     return table[n].size();
+
 }
 
 //-------------------------------------------------------
@@ -385,18 +384,22 @@ void HashTable<Key, Hash>::max_load_factor(float mlf) {
 template<class Key, class Hash>
 void HashTable<Key, Hash>::rehash(HashTable::size_type count) {
 
+    if (count == number_of_buckets) {
+        return;
+    }
     // create a new hash table and copy values
-    HashTable<std::string> hashTable(count);
+    HashTable<Key> *newHashTable = new HashTable<Key>(count);
+    // std::list<Key> *table2 = new std::list<Key>[count];
 
     for (size_type index = 0; index < number_of_buckets; ++index) {
         typename std::list<Key>::iterator i;
         for (i = table[index].begin(); i != table[index].end(); i++) {
-            hashTable.insert(*i);
+            newHashTable->insert(*i);
         }
     }
 
     // Clear table;
-    make_empty();
+    // make_empty();
     delete[] table;
 
     this->number_of_buckets = hashTable.bucket_count();
@@ -422,14 +425,16 @@ void HashTable<Key, Hash>::rehash(HashTable::size_type count) {
 template<class Key, class Hash>
 void HashTable<Key, Hash>::print_table(std::ostream &os) const {
     if (is_empty()) {
-        std::cout << "<empty>\n";
+        os << "<empty>\n";
         return;
     }
     for (size_type i = 0; i < number_of_buckets; i++) {
-        std::cout << i;
-        for (auto x : table[i])
-            std::cout << " --> " << x;
-        std::cout << std::endl;
+        if (table[i].size() == 0) continue;
+        os << i;
+        for (auto x : table[i]) {
+            os << " --> [" << x << "]";
+        }
+        os << std::endl;
     }
 }
 
