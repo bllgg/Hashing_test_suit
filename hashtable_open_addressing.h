@@ -54,6 +54,14 @@ public:
 
     size_t position(const key_type &key) const;
 
+    bool rehash(size_type count);
+
+    float load_factor() const;
+
+    bool is_prime(size_type num);
+
+    std::vector<std::pair<bool, Key>> get_table();
+
     void print_table(std::ostream &os = std::cout) const;
 
     // Optional
@@ -69,14 +77,14 @@ public:
 //---------------------------------------------------------
 template<class Key, class Hash>
 HashTable<Key, Hash>::HashTable() {
-    this->number_of_cells = DEFAULT_CELL_SIZE;
-    this->maximum_load_factor = DEFAULT_MAX_LOAD_FACTOR;
-    this->count = 0;
+    number_of_cells = DEFAULT_CELL_SIZE;
+    maximum_load_factor = DEFAULT_MAX_LOAD_FACTOR;
+    count = 0;
     table.reserve(DEFAULT_CELL_SIZE);
     for (size_type i = 0; i < number_of_cells; i++) {
         table.emplace_back();
     }
-    for (size_type i = 0; i < number_of_cells; ++i) {
+    for (size_type i = 0; i < number_of_cells; i++) {
         auto &slot = table[i];
         slot.first = false;
     }
@@ -103,7 +111,7 @@ HashTable<Key, Hash>::HashTable(const HashTable &other) {
     for (size_type i = 0; i < number_of_cells; i++) {
         auto &slot = table[i];
         if (slot.first) {
-            this->table[i] = other.table[i];
+            table[i] = other.table[i];
         }
     }
 }
@@ -129,7 +137,7 @@ HashTable<Key, Hash> &HashTable<Key, Hash>::operator=(const HashTable &other) { 
     for (size_type i = 0; i < number_of_cells; i++) {
         auto &slot = table[i];
         if (slot.first) {
-            this->table[i] = other.table[i];
+            table[i] = other.table[i];
         }
     }
 
@@ -154,14 +162,14 @@ HashTable<Key, Hash>::~HashTable() {
 //---------------------------------------------------------
 template<class Key, class Hash>
 HashTable<Key, Hash>::HashTable(size_type cells) {
-    this->number_of_cells = cells;
-    this->maximum_load_factor = DEFAULT_MAX_LOAD_FACTOR;
-    this->count = 0;
+    number_of_cells = cells;
+    maximum_load_factor = DEFAULT_MAX_LOAD_FACTOR;
+    count = 0;
     table.reserve(number_of_cells);
     for (size_type i = 0; i < number_of_cells; i++) {
         table.emplace_back();
     }
-    for (size_type i = 0; i < number_of_cells; ++i) {
+    for (size_type i = 0; i < number_of_cells; i++) {
         auto &slot = table[i];
         slot.first = false;
     }
@@ -213,7 +221,7 @@ size_t HashTable<Key, Hash>::table_size() const {
 //---------------------------------------------------------
 template<class Key, class Hash>
 void HashTable<Key, Hash>::make_empty() {
-    for (size_type i = 0; i < number_of_cells; ++i) {
+    for (size_type i = 0; i < number_of_cells; i++) {
         auto &slot = table[i];
         slot.first = false;
 //        slot.second = Key();
@@ -235,16 +243,13 @@ bool HashTable<Key, Hash>::insert(const value_type &value) {
     size_type index = hash_value % number_of_cells;
 
     // Check whether the values is available
-    if (this->contains(value)) {
+    if (contains(value)) {
         return false;
     }
 
-    // if not exceeding the load factor, insert the values
-    if (((float) (count + 1) / number_of_cells) >= maximum_load_factor) {
-        return false;
-    }
-
+    bool ret = true;
     for (size_type i = 0; i < number_of_cells; i++) {
+
         auto &slot = table[index];
 
         // If the slot has no value we can insert  the value
@@ -252,7 +257,19 @@ bool HashTable<Key, Hash>::insert(const value_type &value) {
             slot.first = true;
             slot.second = value;
             count++;
-            return true;
+
+            std::cout << "Load factor " << load_factor() << std::endl;
+
+            if (load_factor() > maximum_load_factor) {
+                size_type cell_number = number_of_cells * 4;
+                while (!is_prime(cell_number)) {
+                    cell_number++;
+                }
+
+                ret = rehash(cell_number);
+            }
+            return ret;
+
         } else {
             hash_value++;
             index = (hash_value) % number_of_cells;
@@ -264,6 +281,29 @@ bool HashTable<Key, Hash>::insert(const value_type &value) {
 }
 
 //-------------------------------------------------------
+// Name: is_prime()
+// PreCondition: num should be positive
+// PostCondition: returns the number is prime or not.
+//---------------------------------------------------------
+template<class Key, class Hash>
+bool HashTable<Key, Hash>::is_prime(size_type num) {
+    for (size_type i = 2; i * i <= num; i++)
+        if (num % i == 0) // Factor found
+            return false;
+    return true;
+}
+
+//-------------------------------------------------------
+// Name: load_factor()
+// PreCondition:
+// PostCondition: return the current load factor of the table.
+//---------------------------------------------------------
+template<class Key, class Hash>
+float HashTable<Key, Hash>::load_factor() const {
+    return (float) size() / (float) table_size();
+}
+
+//-------------------------------------------------------
 // Name: remove
 // PreCondition:  the radius is greater than zero
 // PostCondition: remove the specified value from the table, return
@@ -272,8 +312,8 @@ bool HashTable<Key, Hash>::insert(const value_type &value) {
 //---------------------------------------------------------
 template<class Key, class Hash>
 size_t HashTable<Key, Hash>::remove(const key_type &key) {
-    if (this->contains(key)) {
-        size_type index = this->position(key);
+    if (contains(key)) {
+        size_type index = position(key);
         auto &slot = table[index];
         slot.first = false;
         count--;
@@ -316,6 +356,60 @@ bool HashTable<Key, Hash>::contains(const key_type &key) {
 }
 
 //-------------------------------------------------------
+// Name: rehash()
+// PreCondition:
+// PostCondition: set the number of buckets to the specified value and
+// rehash the table if the total number of buckets has
+// changed. If the new number of buckets would cause the
+// load factor to exceed the maximum load factor, then
+// the new number of buckets is at least size() /
+// max_load_factor().
+//---------------------------------------------------------
+template<class Key, class Hash>
+bool HashTable<Key, Hash>::rehash(size_type count) {
+
+    std::cout << "Size " << size() << " count " << count << std::endl;
+    //If the count is same, no need to rehash
+    if (count == number_of_cells) {
+        return false;
+    }
+
+    // Check for the load factor
+    if (((float) size() / (float) count) > maximum_load_factor) {
+        std::cout << "Invalid count\n";
+        return false;
+    }
+
+    HashTable<Key> *newHashTable = new HashTable<Key>(count);
+
+    for (size_type index = 0; index < number_of_cells; index++) {
+        auto &slot = table[index];
+        if (slot.first) {
+            newHashTable->insert(slot.second);
+        }
+    }
+
+    table.reserve(count);
+    number_of_cells = count;
+
+    for (size_type i = 0; i < count; i++) {
+        auto &slot = table[i];
+        slot.first = false;
+    }
+
+    for (size_type index = 0; index < count; index++) {
+        auto &slot = (newHashTable->get_table())[index];
+        if (slot.first) {
+            insert(slot.second);
+        }
+    }
+
+    delete newHashTable;
+    return true;
+
+}
+
+//-------------------------------------------------------
 // Name: position
 // PreCondition:  the radius is greater than zero
 // PostCondition: return the index of the cell that would contain the
@@ -346,6 +440,11 @@ size_t HashTable<Key, Hash>::position(const key_type &key) const {
     return number_of_cells + 1;
 }
 
+template<class Key, class Hash>
+std::vector<std::pair<bool, Key>> HashTable<Key, Hash>::get_table() {
+    return table;
+}
+
 //-------------------------------------------------------
 // Name: print_table
 // PreCondition:  the radius is greater than zero
@@ -361,11 +460,12 @@ void HashTable<Key, Hash>::print_table(std::ostream &os) const {
     }
     for (size_type i = 0; i < number_of_cells; i++) {
         auto &slot = table[i];
-        os << i << ": ";
         if (slot.first) {
+            os << i << ": ";
             os << slot.second;
+            os << std::endl;
         }
-        os << std::endl;
+
     }
 }
 

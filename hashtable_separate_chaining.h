@@ -67,6 +67,8 @@ public:
 
     void rehash(size_type count);
 
+    std::list<Key> *get_table();
+
     void print_table(std::ostream &os = std::cout) const;
 
     // Optional
@@ -83,8 +85,8 @@ public:
 //---------------------------------------------------------
 template<class Key, class Hash>
 HashTable<Key, Hash>::HashTable() {
-    this->number_of_buckets = DEFAULT_BUCKET_SIZE;
-    this->maximum_load_factor = DEFAULT_MAX_LOAD_FACTOR;
+    number_of_buckets = DEFAULT_BUCKET_SIZE;
+    maximum_load_factor = DEFAULT_MAX_LOAD_FACTOR;
     table = new std::list<Key>[DEFAULT_BUCKET_SIZE];
 }
 
@@ -105,8 +107,8 @@ HashTable<Key, Hash>::HashTable(const HashTable &other) {
     table = new std::list<Key>[number_of_buckets];
 
     // copy values
-    for (int i = 0; i < number_of_buckets; i++) {
-        this->table[i] = other.table[i];
+    for (size_type i = 0; i < number_of_buckets; i++) {
+        table[i] = other.table[i];
     }
 }
 
@@ -127,8 +129,8 @@ HashTable<Key, Hash> &HashTable<Key, Hash>::operator=(const HashTable &other) { 
     table = new std::list<Key>[number_of_buckets];
 
     // copy values
-    for (int i = 0; i < number_of_buckets; i++) {
-        this->table[i] = other.table[i];
+    for (size_type i = 0; i < number_of_buckets; i++) {
+        table[i] = other.table[i];
     }
     return *this;
 }
@@ -141,8 +143,8 @@ HashTable<Key, Hash> &HashTable<Key, Hash>::operator=(const HashTable &other) { 
 //---------------------------------------------------------
 template<class Key, class Hash>
 HashTable<Key, Hash>::HashTable(size_type buckets) {
-    this->number_of_buckets = buckets;
-    this->maximum_load_factor = DEFAULT_MAX_LOAD_FACTOR;
+    number_of_buckets = buckets;
+    maximum_load_factor = DEFAULT_MAX_LOAD_FACTOR;
     table = new std::list<Key>[number_of_buckets];
 }
 
@@ -165,7 +167,7 @@ HashTable<Key, Hash>::~HashTable() {
 template<class Key, class Hash>
 bool HashTable<Key, Hash>::is_empty() const {
     for (size_type i = 0; i < number_of_buckets; ++i) {
-        if (this->table[i].size() != 0) {
+        if (table[i].size() != 0) {
             return false;
         }
     }
@@ -181,7 +183,7 @@ template<class Key, class Hash>
 size_t HashTable<Key, Hash>::size() const {
     size_type sum{};
     for (size_type i = 0; i < number_of_buckets; ++i) {
-        if (this->table[i].size() != 0) {
+        if (table[i].size() != 0) {
             sum += table[i].size();
         }
     }
@@ -198,7 +200,7 @@ size_t HashTable<Key, Hash>::size() const {
 template<class Key, class Hash>
 void HashTable<Key, Hash>::make_empty() {
     for (size_type i = 0; i < number_of_buckets; i++) {
-        this->table[i].clear();
+        table[i].clear();
     }
 }
 
@@ -215,13 +217,13 @@ bool HashTable<Key, Hash>::insert(const value_type &value) {
     size_type hash_value = Hash{}(value);
     size_type index = hash_value % number_of_buckets;
 
-    if (this->contains(value)) {
+    if (contains(value)) {
         return false;
     }
 
     table[index].push_back(value);
 
-    if (this->load_factor() > maximum_load_factor) {
+    if (load_factor() > maximum_load_factor) {
         // Find the next prime
         size_type bucket_number = number_of_buckets * 2;
         while (!is_prime(bucket_number)) {
@@ -383,10 +385,9 @@ void HashTable<Key, Hash>::max_load_factor(float mlf) {
 //---------------------------------------------------------
 template<class Key, class Hash>
 void HashTable<Key, Hash>::rehash(HashTable::size_type count) {
-    std::cout << "rehashing\n";
 
     //If the count is same, no need to rehash
-    if (count == this->number_of_buckets) {
+    if (count == number_of_buckets) {
         return;
     }
 
@@ -401,7 +402,7 @@ void HashTable<Key, Hash>::rehash(HashTable::size_type count) {
     newHashTable->max_load_factor(maximum_load_factor);
     // std::list<Key> *table2 = new std::list<Key>[count];
 
-    for (size_type index = 0; index < this->number_of_buckets; ++index) {
+    for (size_type index = 0; index < number_of_buckets; ++index) {
         typename std::list<Key>::iterator i;
         for (i = table[index].begin(); i != table[index].end(); i++) {
             newHashTable->insert(*i);
@@ -411,19 +412,23 @@ void HashTable<Key, Hash>::rehash(HashTable::size_type count) {
     // Clear table;
     delete[] table;
 
-    this->number_of_buckets = newHashTable->bucket_count();
-    table = new std::list<Key>[this->number_of_buckets];
+    number_of_buckets = newHashTable->bucket_count();
+    table = new std::list<Key>[number_of_buckets];
 
-    this->table = new std::list<Key>[count];
-    for (size_type index = 0; index < this->number_of_buckets; ++index) {
+    for (size_type index = 0; index < number_of_buckets; ++index) {
         typename std::list<Key>::iterator i;
-        for (i = newHashTable->table[index].begin(); i != newHashTable->table[index].end(); i++) {
-            this->insert(*i);
+        for (i = (newHashTable->get_table())[index].begin(); i != (newHashTable->get_table())[index].end(); i++) {
+            insert(*i);
         }
     }
 
     delete newHashTable;
 
+}
+
+template<class Key, class Hash>
+std::list<Key> *HashTable<Key, Hash>::get_table() {
+    return table;
 }
 
 //-------------------------------------------------------
