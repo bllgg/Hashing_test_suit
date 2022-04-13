@@ -5,6 +5,24 @@
 #include <iostream>
 #include <vector>
 
+template<typename Key>
+struct S {
+    Key key;
+};
+
+template<typename Key>
+bool operator==(const S<Key> &lhs, const S<Key> &rhs) {
+    return lhs.key == rhs.key;
+}
+
+template<typename Key>
+struct std::hash<S<Key>> {
+    std::size_t operator()(S<Key> const &s) const noexcept {
+        std::size_t h = std::hash<std::string>{}(s.key);
+        return h;
+    }
+};
+
 template<class Key, class Hash=std::hash<Key>>
 class HashTable {
 public:
@@ -224,8 +242,8 @@ void HashTable<Key, Hash>::make_empty() {
     for (size_type i = 0; i < number_of_cells; i++) {
         auto &slot = table[i];
         slot.first = false;
-//        slot.second = Key();
     }
+    count = 0;
 }
 
 //-------------------------------------------------------
@@ -365,20 +383,19 @@ bool HashTable<Key, Hash>::contains(const key_type &key) {
 // max_load_factor().
 //---------------------------------------------------------
 template<class Key, class Hash>
-bool HashTable<Key, Hash>::rehash(size_type count) {
-
+bool HashTable<Key, Hash>::rehash(size_type table_size) {
     //If the count is same, no need to rehash
-    if (count == number_of_cells) {
+    if (table_size == number_of_cells) {
         return false;
     }
 
     // Check for the load factor
-    if (((float) size() / (float) count) > maximum_load_factor) {
-        std::cout << "Invalid count\n";
+    if (((float) size() / (float) table_size) > maximum_load_factor) {
         return false;
     }
 
-    HashTable<Key> *newHashTable = new HashTable<Key>(count);
+    count = 0;
+    HashTable<Key> *newHashTable = new HashTable<Key>(table_size);
 
     for (size_type index = 0; index < number_of_cells; index++) {
         auto &slot = table[index];
@@ -387,16 +404,15 @@ bool HashTable<Key, Hash>::rehash(size_type count) {
         }
     }
 
-    table.resize(count);
-    number_of_cells = count;
+    table.resize(table_size);
+    number_of_cells = table_size;
 
-    for (size_type i = 0; i < count; i++) {
+    for (size_type i = 0; i < table_size; i++) {
         auto &slot = table[i];
         slot.first = false;
-        slot.second = Key();
     }
 
-    for (size_type index = 0; index < count; index++) {
+    for (size_type index = 0; index < table_size; index++) {
         auto slot = (newHashTable->get_table())[index];
         if (slot.first) {
             insert(slot.second);

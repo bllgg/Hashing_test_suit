@@ -7,6 +7,24 @@
 #include <functional>
 #include <iostream>
 
+template<typename Key>
+struct S {
+    Key key;
+};
+
+template<typename Key>
+bool operator==(const S<Key> &lhs, const S<Key> &rhs) {
+    return lhs.key == rhs.key;
+}
+
+template<typename Key>
+struct std::hash<S<Key>> {
+    std::size_t operator()(S<Key> const &s) const noexcept {
+        std::size_t h = std::hash<std::string>{}(s.key);
+        return h;
+    }
+};
+
 template<class Key, class Hash=std::hash<Key>>
 class HashTable {
 public:
